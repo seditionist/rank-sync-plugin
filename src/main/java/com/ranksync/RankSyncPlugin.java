@@ -1,4 +1,4 @@
-package com.example;
+package com.ranksync;
 
 import com.google.inject.Provides;
 import javax.inject.Inject;
@@ -14,15 +14,17 @@ import net.runelite.client.plugins.PluginDescriptor;
 
 @Slf4j
 @PluginDescriptor(
-	name = "Example"
+	name = "Rank-Sync",
+	tags = {"clan", "rank", "sync", "export"},
+	description = "Export clan ranks and members for tracking and management."
 )
-public class ExamplePlugin extends Plugin
+public class RankSyncPlugin extends Plugin
 {
 	@Inject
 	private Client client;
 
 	@Inject
-	private ExampleConfig config;
+	private RankSyncConfig config;
 
 	@Override
 	protected void startUp() throws Exception
@@ -46,8 +48,8 @@ public class ExamplePlugin extends Plugin
 	}
 
 	@Provides
-	ExampleConfig provideConfig(ConfigManager configManager)
+	RankSyncConfig provideConfig(ConfigManager configManager)
 	{
-		return configManager.getConfig(ExampleConfig.class);
+		return configManager.getConfig(RankSyncConfig.class);
 	}
 }

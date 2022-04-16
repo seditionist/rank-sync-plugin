@@ -1,2 +1,2 @@
-# Example
-An example greeter plugin
+# Rank-Sync
+Export clan ranks and members for tracking and management.
