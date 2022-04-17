@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.ranksync.RankSyncConfig;
 import com.ranksync.RankSyncPlugin;
 import com.ranksync.events.KeyValidated;
+import com.ranksync.events.MembersSynced;
 import com.ranksync.models.*;
 import jdk.internal.joptsimple.internal.Strings;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +20,7 @@ import javax.inject.Inject;
 import java.awt.*;
 import java.io.IOException;
 import java.text.DateFormat;
+import java.util.ArrayList;
 import java.util.function.Consumer;
 
 @Slf4j
@@ -42,6 +44,26 @@ public class RankSyncClient {
 
     @Inject
     private EventBus eventBus;
+
+    public void syncClanMembers(String name, ArrayList<MemberImport> clanMembers) {
+        MembersImport payload = new MembersImport(config.apiKey(), name, clanMembers);
+        Request request = createRequest(payload, HttpMethod.PUT, "import", "members");
+        sendRequest(request, this::syncClanMembersCallBack);
+    }
+
+    private void syncClanMembersCallBack(Response response) {
+        if (response.isSuccessful()) {
+            MembersSynced data = parseResponse(response, MembersSynced.class);
+            if (data != null)
+                eventBus.post(data);
+
+            return;
+        }
+
+        SyncStatus data = parseResponse(response, SyncStatus.class);
+        final String message = (data != null ? data.getData() : null);
+        sendResponseToChat(message, RankSyncPlugin.ERROR);
+    }
 
     public void validateAPIKey() {
         config.keyVerified(false);

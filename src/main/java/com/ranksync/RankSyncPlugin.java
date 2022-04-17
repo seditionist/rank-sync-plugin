@@ -4,7 +4,9 @@ import com.google.common.base.Strings;
 import com.google.inject.Binder;
 import com.google.inject.Provides;
 import javax.inject.Inject;
+import com.ranksync.events.MembersSynced;
 import com.ranksync.events.KeyValidated;
+import com.ranksync.ui.SyncMembersButton;
 import com.ranksync.web.RankSyncClient;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
@@ -84,7 +86,24 @@ public class RankSyncPlugin extends Plugin {
 			return;
 		}
 
-		// TODO: create buttons for importing members and ranks
+		switch (groupID) {
+			case CLAN_SETTINGS_MEMBERS_PAGE_WIDGET:
+				clientThread.invoke(() -> new SyncMembersButton(client, syncClient, CLAN_SETTINGS_MEMBERS_PAGE_WIDGET_ID));
+				break;
+		}
+
+		// TODO: create button for importing ranks
+	}
+
+	@Subscribe
+	public void onMembersSynced(MembersSynced event) {
+		String message = String.format(
+				"Members synced for %s. %d added, %d updated, %d removed.",
+				event.getName(),
+				event.getAdded(),
+				event.getUpdated(),
+				event.getRemoved());
+		sendResponseToChat(message, SUCCESS);
 	}
 
 	@Subscribe
