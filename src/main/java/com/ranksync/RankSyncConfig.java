@@ -4,16 +4,30 @@ import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 
-@ConfigGroup("Rank-Sync")
-public interface RankSyncConfig extends Config
-{
+@ConfigGroup(RankSyncPlugin.CONFIG_GROUP)
+public interface RankSyncConfig extends Config {
+
 	@ConfigItem(
-		keyName = "greeting",
-		name = "Welcome Greeting",
-		description = "The message to show to the user when they login"
+		keyName = RankSyncPlugin.API_KEY_NAME,
+		name = "API Key",
+		description = "API Key for your Rank-Sync clan",
+		secret = true
 	)
-	default String greeting()
-	{
-		return "Hello";
-	}
+	default String apiKey() { return ""; }
+
+	@ConfigItem(
+			keyName = RankSyncPlugin.KEY_VERIFIED_NAME,
+			name = "",
+			description = "",
+			hidden = true
+	)
+	default boolean keyVerified() { return false; }
+
+	@ConfigItem(
+			keyName = RankSyncPlugin.KEY_VERIFIED_NAME,
+			name = "",
+			description = "",
+			hidden = true
+	)
+	void keyVerified(boolean value);
 }
