@@ -1,23 +1,18 @@
 package com.ranksync.web;
 
+import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.ranksync.RankSyncConfig;
-import com.ranksync.RankSyncPlugin;
+import com.ranksync.events.ErrorReceived;
 import com.ranksync.events.KeyValidated;
 import com.ranksync.events.MembersSynced;
+import com.ranksync.events.RanksSynced;
 import com.ranksync.models.*;
-import jdk.internal.joptsimple.internal.Strings;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.ChatMessageType;
-import net.runelite.api.Client;
-import net.runelite.client.chat.ChatMessageBuilder;
-import net.runelite.client.chat.ChatMessageManager;
-import net.runelite.client.chat.QueuedMessage;
 import net.runelite.client.eventbus.EventBus;
 import okhttp3.*;
 import javax.inject.Inject;
-import java.awt.*;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.util.ArrayList;
@@ -34,13 +29,7 @@ public class RankSyncClient {
             .create();
 
     @Inject
-    private Client client;
-
-    @Inject
     private RankSyncConfig config;
-
-    @Inject
-    private ChatMessageManager chatMessageManager;
 
     @Inject
     private EventBus eventBus;
@@ -48,43 +37,24 @@ public class RankSyncClient {
     public void syncClanMembers(String name, ArrayList<MemberImport> clanMembers) {
         MembersImport payload = new MembersImport(config.apiKey(), name, clanMembers);
         Request request = createRequest(payload, HttpMethod.PUT, "import", "members");
-        sendRequest(request, this::syncClanMembersCallBack);
+        sendRequest(request, r -> responseCallBack(r, MembersSynced.class, "Error syncing members. Try again later."));
     }
 
-    private void syncClanMembersCallBack(Response response) {
-        if (response.isSuccessful()) {
-            MembersSynced data = parseResponse(response, MembersSynced.class);
-            if (data != null)
-                eventBus.post(data);
-
-            return;
-        }
-
-        SyncStatus data = parseResponse(response, SyncStatus.class);
-        final String message = (data != null ? data.getData() : null);
-        sendResponseToChat(message, RankSyncPlugin.ERROR);
+    public void syncClanRanks(String name, ArrayList<RankImport> clanRanks) {
+        RanksImport payload = new RanksImport(config.apiKey(), name, clanRanks);
+        Request request = createRequest(payload, HttpMethod.PUT, "import", "ranks");
+        sendRequest(request, r -> responseCallBack(r, RanksSynced.class, "Error syncing ranks. Try again later."));
     }
 
-    public void validateAPIKey() {
+    public void validateAPIKey(String name) {
         config.keyVerified(false);
-        if (Strings.isNullOrEmpty(config.apiKey()))
+        String key = config.apiKey();
+        if (Strings.isNullOrEmpty(key))
             return;
 
-        ValidateKey payload = new ValidateKey(config.apiKey());
+        ValidateKey payload = new ValidateKey(key, name);
         Request request = createRequest(payload, HttpMethod.POST, "key", "validate");
-        sendRequest(request, this::validateAPIKeyCallBack);
-    }
-
-    private void validateAPIKeyCallBack(Response response) {
-        if (response.isSuccessful()) {
-            boolean data = parseResponse(response, boolean.class);
-            eventBus.post(new KeyValidated(data));
-            return;
-        }
-
-        SyncStatus data = parseResponse(response, SyncStatus.class);
-        final String message = (data != null ? data.getData() : null);
-        sendResponseToChat(message, RankSyncPlugin.ERROR);
+        sendRequest(request, r -> responseCallBack(r, KeyValidated.class, "Error validating key. Try again later."));
     }
 
     void sendRequest(Request request, Consumer<Response> consumer) {
@@ -142,13 +112,23 @@ public class RankSyncClient {
         }
     }
 
-    private void sendResponseToChat(String message, Color color) {
-        ChatMessageBuilder cmb = new ChatMessageBuilder();
-        cmb.append(color, "Rank-Sync: " + message);
+    private void parseError(Response response, String defaultMessage) {
+        ErrorReceived data = parseResponse(response, ErrorReceived.class);
+        eventBus.post(data != null ? data : defaultMessage);
+    }
 
-        chatMessageManager.queue(QueuedMessage.builder()
-                .type(ChatMessageType.CONSOLE)
-                .runeLiteFormattedMessage(cmb.build())
-                .build());
+    private <T> void responseCallBack(Response response, Class<T> type, String errorMessage) {
+        if (!response.isSuccessful()) {
+            parseError(response, errorMessage);
+            return;
+        }
+
+        T data = parseResponse(response, type);
+        if (data != null) {
+            eventBus.post(data);
+            return;
+        }
+
+        eventBus.post(new ErrorReceived(errorMessage));
     }
 }

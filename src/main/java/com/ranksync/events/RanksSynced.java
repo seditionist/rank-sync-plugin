@@ -5,7 +5,6 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public class KeyValidated {
-    String clan;
-    boolean valid;
+public class RanksSynced {
+    String name;
 }
