@@ -57,12 +57,12 @@ public class RankSyncPlugin extends Plugin {
 	private RankSyncClient syncClient;
 
 	@Override
-	protected void startUp() throws Exception {
+	protected void startUp() {
 		log.info("Rank-Sync started!");
 	}
 
 	@Override
-	protected void shutDown() throws Exception {
+	protected void shutDown() {
 		log.info("Rank-Sync stopped!");
 	}
 

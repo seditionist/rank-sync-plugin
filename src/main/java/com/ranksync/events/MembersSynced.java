@@ -6,7 +6,6 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class MembersSynced {
-
     String name;
     Integer added;
     Integer updated;

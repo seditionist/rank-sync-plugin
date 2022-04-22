@@ -134,7 +134,6 @@ public class RankSyncClient {
     private <T> T parseResponse(Response r, Class<T> type) {
         try {
             String body = r.body() != null ? r.body().string() : null;
-            log.info(body);
             return gson.fromJson(body, type);
         }
         catch (IOException e) {
